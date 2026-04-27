@@ -66,6 +66,21 @@ ul { list-style: none; }
 .tab:hover { color: var(--text); }
 .tab.active { background: var(--bg3); color: var(--text); font-weight: 500; }
 
+.btn-notif {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: var(--bg2);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  opacity: 0.7;
+}
+.btn-notif:hover { background: var(--bg3); opacity: 1; }
+.notif-on { font-size: 15px; opacity: 0.4; user-select: none; }
+
 .btn-settings {
   width: 32px;
   height: 32px;
@@ -169,7 +184,9 @@ ul { list-style: none; }
 }
 .input-btn:hover:not(:disabled) { background: var(--accent-hover); }
 .input-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.input-error { font-size: 12px; color: var(--warning); margin-top: 4px; }
+.input-status { min-height: 18px; display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.parse-source { font-size: 11px; font-weight: 500; }
+.input-error { font-size: 12px; color: var(--warning); }
 
 /* ===== Main ===== */
 .app-main { flex: 1; padding: 8px 0 40px; }

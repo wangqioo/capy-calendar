@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import { useEvents } from './store'
+import { requestPermission, getPermission, rescheduleAll } from './notifications'
 import InputBar from './components/InputBar'
 import ListView from './components/ListView'
 import CalendarView from './components/CalendarView'
@@ -18,6 +19,18 @@ export default function App() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [notifPerm, setNotifPerm] = useState(getPermission)
+
+  // Reschedule notifications whenever events change
+  useEffect(() => {
+    if (notifPerm === 'granted') rescheduleAll(events)
+  }, [events, notifPerm])
+
+  async function handleRequestNotif() {
+    const perm = await requestPermission()
+    setNotifPerm(perm)
+    if (perm === 'granted') rescheduleAll(events)
+  }
 
   function handleSaveEvent(ev) {
     if (editingEvent && editingEvent.id) {
@@ -51,6 +64,14 @@ export default function App() {
             日历
           </button>
         </nav>
+        {notifPerm === 'default' && (
+          <button className="btn-notif" onClick={handleRequestNotif} title="开启提醒推送">
+            🔔
+          </button>
+        )}
+        {notifPerm === 'granted' && (
+          <span className="notif-on" title="提醒已开启">🔔</span>
+        )}
         <button className="btn-settings" onClick={() => setShowSettings(true)} title="AI 设置">
           ⚙
         </button>
