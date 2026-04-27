@@ -1,15 +1,10 @@
-import { loadSettings } from './settings'
+import { loadSettings, isAnthropicEndpoint } from './settings'
 
-const DEFAULT_API_URL = 'https://ai-gateway.happycapy.ai/api/v1/chat/completions'
-const DEFAULT_API_KEY = import.meta.env.VITE_AI_KEY
+const BUILTIN_API_URL = 'https://ai-gateway.happycapy.ai/api/v1/chat/completions'
+const BUILTIN_API_KEY = import.meta.env.VITE_AI_KEY
+const BUILTIN_MODEL = 'anthropic/claude-haiku-4.5'
 
-export async function parseEventFromText(text, todayStr) {
-  const s = loadSettings()
-  const apiUrl = s.apiUrl || DEFAULT_API_URL
-  const apiKey = s.apiKey || DEFAULT_API_KEY
-  const model = s.model || 'anthropic/claude-haiku-4.5'
-
-  const systemPrompt = `你是一个日程解析助手。今天是 ${todayStr}。
+const SYSTEM_PROMPT = (todayStr) => `你是一个日程解析助手。今天是 ${todayStr}。
 用户会输入一段自然语言描述的事件或提醒，你需要将其解析为结构化 JSON。
 
 返回格式（严格 JSON，不加任何解释）：
@@ -32,28 +27,79 @@ export async function parseEventFromText(text, todayStr) {
 - tags 从内容中推断，如 ["工作","会议"]
 - title 要简洁，去掉时间日期词汇`
 
-  const resp = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: text },
-      ],
-      max_tokens: 300,
-    }),
-  })
+export async function parseEventFromText(text, todayStr) {
+  const s = loadSettings()
+  const useBuiltin = !s.apiKey && !s.baseUrl.includes('anthropic.com') && !s.baseUrl.includes('openai.com')
+    && !s.baseUrl.includes('deepseek') && !s.baseUrl.includes('groq')
+    && !s.baseUrl.includes('bigmodel') && !s.baseUrl.includes('minimax')
+    && !s.baseUrl.includes('dashscope') && !s.baseUrl.includes('localhost')
 
-  if (!resp.ok) throw new Error(`AI 解析失败 (${resp.status})`)
-  const data = await resp.json()
-  const content = data.choices[0].message.content.trim()
+  const apiKey = s.apiKey || BUILTIN_API_KEY
+  const model = s.model || BUILTIN_MODEL
+  const systemContent = SYSTEM_PROMPT(todayStr)
+  const messages = [
+    { role: 'user', content: text },
+  ]
 
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('无法解析返回结果')
+  let resp
 
-  return JSON.parse(jsonMatch[0])
+  if (isAnthropicEndpoint(s.baseUrl)) {
+    // Anthropic native API format
+    const url = s.baseUrl.replace(/\/$/, '') + '/v1/messages'
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 400,
+        system: systemContent,
+        messages,
+      }),
+    })
+    if (!resp.ok) {
+      const err = await resp.text()
+      throw new Error(`Anthropic API 错误 ${resp.status}: ${err}`)
+    }
+    const data = await resp.json()
+    const content = data.content?.[0]?.text?.trim()
+    if (!content) throw new Error('Anthropic 返回内容为空')
+    return extractJson(content)
+  } else {
+    // OpenAI-compatible format (OpenAI, DeepSeek, Qwen, Groq, GLM, Ollama, internal gateway...)
+    const baseUrl = useBuiltin ? 'https://ai-gateway.happycapy.ai/api/v1' : s.baseUrl
+    const url = baseUrl.endsWith('/') ? baseUrl + 'chat/completions' : baseUrl + '/chat/completions'
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 400,
+        messages: [
+          { role: 'system', content: systemContent },
+          { role: 'user', content: text },
+        ],
+      }),
+    })
+    if (!resp.ok) {
+      const err = await resp.text()
+      throw new Error(`API 错误 ${resp.status}: ${err}`)
+    }
+    const data = await resp.json()
+    const content = data.choices?.[0]?.message?.content?.trim()
+    if (!content) throw new Error('返回内容为空')
+    return extractJson(content)
+  }
+}
+
+function extractJson(text) {
+  const match = text.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error('无法解析 JSON')
+  return JSON.parse(match[0])
 }
