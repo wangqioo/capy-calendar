@@ -25,7 +25,8 @@ const SYSTEM_PROMPT = (todayStr) => `你是一个日程解析助手。今天是 
 - repeat 默认 none
 - priority 默认 normal，包含"重要""紧急"等词时设为 high
 - tags 从内容中推断，如 ["工作","会议"]
-- title 要简洁，去掉时间日期词汇`
+- title 只保留事件本身的内容，必须去掉所有时间、日期、提醒类词汇（如"下午两点45"、"明天"、"提醒我"、"记得"等）
+- 示例：输入"下午两点45提醒我核对事项" → title 应为"核对事项"`
 
 export async function parseEventFromText(text, todayStr) {
   const s = loadSettings()
