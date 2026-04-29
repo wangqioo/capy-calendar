@@ -7,7 +7,10 @@ const SOURCE_LABEL = {
   fallback: { text: '本地兜底', color: '#f59e0b' },
 }
 
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+function getSpeechRecognition() {
+  if (typeof window === 'undefined') return null
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null
+}
 
 export default function InputBar({ onAdd }) {
   const [text, setText] = useState('')
@@ -45,11 +48,12 @@ export default function InputBar({ onAdd }) {
       setListening(false)
       return
     }
-    if (!SR) {
+    const SpeechRecognition = getSpeechRecognition()
+    if (!SpeechRecognition) {
       setError('浏览器不支持语音识别，请使用 Chrome 或 Edge')
       return
     }
-    const rec = new SR()
+    const rec = new SpeechRecognition()
     rec.lang = 'zh-CN'
     rec.continuous = false
     rec.interimResults = false

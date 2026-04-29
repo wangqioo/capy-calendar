@@ -1,6 +1,6 @@
 import { loadSettings, isAnthropicEndpoint } from './settings'
 
-const BUILTIN_API_URL = 'https://ai-gateway.happycapy.ai/api/v1/chat/completions'
+const BUILTIN_API_BASE_URL = 'https://ai-gateway.happycapy.ai/api/v1'
 const BUILTIN_API_KEY = import.meta.env.VITE_AI_KEY
 const BUILTIN_MODEL = 'anthropic/claude-haiku-4.5'
 
@@ -45,7 +45,6 @@ export async function parseEventFromText(text, todayStr) {
   let resp
 
   if (isAnthropicEndpoint(s.baseUrl)) {
-    // Anthropic native API format
     const url = s.baseUrl.replace(/\/$/, '') + '/v1/messages'
     resp = await fetch(url, {
       method: 'POST',
@@ -69,34 +68,33 @@ export async function parseEventFromText(text, todayStr) {
     const content = data.content?.[0]?.text?.trim()
     if (!content) throw new Error('Anthropic 返回内容为空')
     return extractJson(content)
-  } else {
-    // OpenAI-compatible format (OpenAI, DeepSeek, Qwen, Groq, GLM, Ollama, internal gateway...)
-    const baseUrl = useBuiltin ? 'https://ai-gateway.happycapy.ai/api/v1' : s.baseUrl
-    const url = baseUrl.endsWith('/') ? baseUrl + 'chat/completions' : baseUrl + '/chat/completions'
-    resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 400,
-        messages: [
-          { role: 'system', content: systemContent },
-          { role: 'user', content: text },
-        ],
-      }),
-    })
-    if (!resp.ok) {
-      const err = await resp.text()
-      throw new Error(`API 错误 ${resp.status}: ${err}`)
-    }
-    const data = await resp.json()
-    const content = data.choices?.[0]?.message?.content?.trim()
-    if (!content) throw new Error('返回内容为空')
-    return extractJson(content)
   }
+
+  const baseUrl = useBuiltin ? BUILTIN_API_BASE_URL : s.baseUrl
+  const url = baseUrl.endsWith('/') ? baseUrl + 'chat/completions' : baseUrl + '/chat/completions'
+  resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 400,
+      messages: [
+        { role: 'system', content: systemContent },
+        { role: 'user', content: text },
+      ],
+    }),
+  })
+  if (!resp.ok) {
+    const err = await resp.text()
+    throw new Error(`API 错误 ${resp.status}: ${err}`)
+  }
+  const data = await resp.json()
+  const content = data.choices?.[0]?.message?.content?.trim()
+  if (!content) throw new Error('返回内容为空')
+  return extractJson(content)
 }
 
 function extractJson(text) {

@@ -1,14 +1,11 @@
 import dayjs from 'dayjs'
 
-const PRIORITY_LABEL = { low: '低', normal: '中', high: '高' }
-const PRIORITY_COLOR = { low: '#94a3b8', normal: '#64748b', high: '#ef4444' }
 const REPEAT_LABEL = { none: '', daily: '每天', weekly: '每周', monthly: '每月' }
 
 export default function ListView({ events, onToggle, onEdit, onDelete }) {
   const today = dayjs().format('YYYY-MM-DD')
   const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD')
 
-  // Group events
   const overdue = []
   const todayEvents = []
   const tomorrowEvents = []
@@ -33,7 +30,7 @@ export default function ListView({ events, onToggle, onEdit, onDelete }) {
     else if (ev.date === today) todayEvents.push(ev)
     else if (ev.date === tomorrow) tomorrowEvents.push(ev)
     else if (ev.date > today) upcoming.push(ev)
-    else todayEvents.push(ev) // done past events show in today section
+    else todayEvents.push(ev)
   }
 
   const groups = [

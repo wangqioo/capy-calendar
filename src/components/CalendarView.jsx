@@ -6,18 +6,14 @@ export default function CalendarView({ events, selectedDate, onSelectDate, onEdi
 
   const today = dayjs().format('YYYY-MM-DD')
   const startOfMonth = viewMonth.startOf('month')
-  const endOfMonth = viewMonth.endOf('month')
   const startDay = startOfMonth.day() // 0=Sun
   const daysInMonth = viewMonth.daysInMonth()
 
-  // Build calendar grid (fill leading/trailing blanks)
   const cells = []
-  // Leading blanks (Monday-first: adjust)
   const leadingBlanks = (startDay + 6) % 7 // Mon=0
   for (let i = 0; i < leadingBlanks; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) cells.push(viewMonth.date(d))
 
-  // Group events by date
   const byDate = {}
   for (const ev of events) {
     if (!ev.date) continue
@@ -26,9 +22,7 @@ export default function CalendarView({ events, selectedDate, onSelectDate, onEdi
   }
 
   const selected = selectedDate.format('YYYY-MM-DD')
-
   const dayNames = ['一', '二', '三', '四', '五', '六', '日']
-
   const selectedEvents = byDate[selected] || []
 
   return (

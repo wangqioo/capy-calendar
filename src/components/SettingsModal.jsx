@@ -30,8 +30,11 @@ export default function SettingsModal({ onClose }) {
   }
 
   function handleSave() {
-    const { _savedKeys, ...toSave } = local
-    saveSettings(toSave)
+    saveSettings({
+      baseUrl: local.baseUrl,
+      model: local.model,
+      apiKey: local.apiKey,
+    })
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
   }

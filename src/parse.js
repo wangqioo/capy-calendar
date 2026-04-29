@@ -12,7 +12,7 @@ export async function parseEvent(text) {
   const todayStr = dayjs().format('YYYY-MM-DD')
 
   // 1. Try local rule-based parsing
-  const { result: local, confidence } = localParse(text, todayStr)
+  const { result: local, confidence, hasExplicitTime } = localParse(text, todayStr)
 
   // 2. Decide whether AI is needed
   const forceAI = needsAI(text)
@@ -28,7 +28,7 @@ export async function parseEvent(text) {
     return {
       event: {
         title: aiResult.title || local.title || text.trim(),
-        date: aiResult.date || local.date || todayStr,
+        date: aiResult.date || local.date || (hasExplicitTime ? todayStr : null),
         time: aiResult.time || local.time || null,
         endTime: aiResult.endTime || local.endTime || null,
         repeat: aiResult.repeat || local.repeat || 'none',
