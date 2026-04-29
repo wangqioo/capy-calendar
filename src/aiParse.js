@@ -29,7 +29,8 @@ const SYSTEM_PROMPT = (todayStr) => `你是一个日程解析助手。今天是 
 - title 只保留事件本身的内容，必须去掉所有时间、日期、提醒类词汇（如"下午两点45"、"明天"、"提醒我"、"记得"等）
 - 示例：输入"下午两点45提醒我核对事项" → title 应为"核对事项"
 - 示例：输入"下午4点到6点开会" → time 应为"16:00"，endTime 应为"18:00"
-- 示例：输入"今晚7点到8点15复盘" → time 应为"19:00"，endTime 应为"20:15"`
+- 示例：输入"今晚7点到8点15复盘" → time 应为"19:00"，endTime 应为"20:15"
+- 示例：输入"明早八点到九点半晨会" → time 应为"08:00"，endTime 应为"09:30"`
 
 export async function parseEventFromText(text, todayStr) {
   const s = loadSettings()
