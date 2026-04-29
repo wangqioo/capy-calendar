@@ -84,7 +84,7 @@ export default function CalendarView({ events, selectedDate, onSelectDate, onEdi
                   className={`cal-event-item ${ev.done ? 'done' : ''} priority-${ev.priority}`}
                   onClick={() => onEdit(ev)}
                 >
-                  <span className="cal-ev-time">{ev.time || '--:--'}</span>
+                  <span className="cal-ev-time">{ev.time ? `${ev.time}${ev.endTime ? `-${ev.endTime}` : ''}` : '--:--'}</span>
                   <span className="cal-ev-title">{ev.title}</span>
                   {ev.priority === 'high' && <span className="dot-high-tag">!</span>}
                 </li>

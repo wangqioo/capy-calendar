@@ -22,11 +22,13 @@ const SYSTEM_PROMPT = (todayStr) => `你是一个日程解析助手。今天是 
 规则：
 - 如果没有明确日期，date 设为 null
 - 如果没有明确时间，time 设为 null
+- 如果用户表达了时间段，必须同时返回 time 和 endTime
 - repeat 默认 none
 - priority 默认 normal，包含"重要""紧急"等词时设为 high
 - tags 从内容中推断，如 ["工作","会议"]
 - title 只保留事件本身的内容，必须去掉所有时间、日期、提醒类词汇（如"下午两点45"、"明天"、"提醒我"、"记得"等）
-- 示例：输入"下午两点45提醒我核对事项" → title 应为"核对事项"`
+- 示例：输入"下午两点45提醒我核对事项" → title 应为"核对事项"
+- 示例：输入"下午4点到6点开会" → time 应为"16:00"，endTime 应为"18:00"`
 
 export async function parseEventFromText(text, todayStr) {
   const s = loadSettings()
