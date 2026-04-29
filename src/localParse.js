@@ -4,13 +4,24 @@ import dayjs from 'dayjs'
 // ── Chinese → English date/time normalization ──────────────────────────────
 
 const WEEKDAY_MAP = { '一': 'Monday', '二': 'Tuesday', '三': 'Wednesday', '四': 'Thursday', '五': 'Friday', '六': 'Saturday', '日': 'Sunday', '天': 'Sunday' }
-const NUM_ZH = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, '十一': 11, '十二': 12, '二十': 20, '三十': 30 }
+const NUM_ZH = { '两': 2, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, '十一': 11, '十二': 12, '二十': 20, '三十': 30 }
+
+// Matches both Arabic digits and Chinese hour words (两/一~九, 十, 十一, 十二)
+const ZH_HOUR = '(?:\\d{1,2}|十[一二]?|两|[一二三四五六七八九])'
 
 function zhNumToInt(str) {
   if (!str) return null
   const n = parseInt(str)
   if (!isNaN(n)) return n
   return NUM_ZH[str] ?? null
+}
+
+// Convert captured hour string (Arabic or Chinese) to integer
+function parseHour(str) {
+  if (!str) return 0
+  const n = parseInt(str)
+  if (!isNaN(n)) return n
+  return NUM_ZH[str] ?? 0
 }
 
 // Detect signals that need AI (vague, relational, contextual language)
@@ -51,21 +62,21 @@ function translateToEnglish(text) {
   t = t.replace(/(\d{1,2})月(\d{1,2})日/g, (_, m, d) => `${m}/${d}`)
   t = t.replace(/(\d{1,2})月(\d{1,2})号/g, (_, m, d) => `${m}/${d}`)
 
-  // Time: 上午/早上/早/凌晨 → am, 下午/晚上/傍晚/夜 → pm
-  t = t.replace(/(?:上午|早上|早|早晨)(\d{1,2})(?:点|时|:)(\d{2})?/g, (_, h, m) => `${h}:${m || '00'} am`)
-  t = t.replace(/(?:下午|晚上|傍晚|夜里|夜晚|夜)(\d{1,2})(?:点|时|:)(\d{2})?/g, (_, h, m) => {
-    const hour = parseInt(h)
+  // Time: 上午/早上/早/凌晨 → am, 下午/晚上/傍晚/夜 → pm (supports Chinese number chars)
+  t = t.replace(new RegExp(`(?:上午|早上|早|早晨)(${ZH_HOUR})(?:点|时|:)(\\d{2})?`, 'g'), (_, h, m) => `${parseHour(h)}:${m || '00'} am`)
+  t = t.replace(new RegExp(`(?:下午|晚上|傍晚|夜里|夜晚|夜)(${ZH_HOUR})(?:点|时|:)(\\d{2})?`, 'g'), (_, h, m) => {
+    const hour = parseHour(h)
     return `${hour < 12 ? hour + 12 : hour}:${m || '00'}`
   })
-  t = t.replace(/凌晨(\d{1,2})(?:点|时|:)(\d{2})?/g, (_, h, m) => `${h}:${m || '00'} am`)
-  t = t.replace(/中午(\d{1,2})(?:点|时)?/g, (_, h) => `${h}:00 pm`)
+  t = t.replace(new RegExp(`凌晨(${ZH_HOUR})(?:点|时|:)(\\d{2})?`, 'g'), (_, h, m) => `${parseHour(h)}:${m || '00'} am`)
+  t = t.replace(new RegExp(`中午(${ZH_HOUR})(?:点|时)?`, 'g'), (_, h) => `${parseHour(h)}:00 pm`)
 
-  // Generic time: X点X分 / X点半
-  t = t.replace(/(\d{1,2})点半/g, (_, h) => `${h}:30`)
-  t = t.replace(/(\d{1,2})点(\d{2})分/g, (_, h, m) => `${h}:${m}`)
-  t = t.replace(/(\d{1,2})点(\d{1,2})/g, (_, h, m) => `${h}:${m}`)
-  t = t.replace(/(\d{1,2})点/g, (_, h) => `${h}:00`)
-  t = t.replace(/(\d{1,2})时/g, (_, h) => `${h}:00`)
+  // Generic time: X点X分 / X点半 (supports Chinese number chars)
+  t = t.replace(new RegExp(`(${ZH_HOUR})点半`, 'g'), (_, h) => `${parseHour(h)}:30`)
+  t = t.replace(new RegExp(`(${ZH_HOUR})点(\\d{2})分`, 'g'), (_, h, m) => `${parseHour(h)}:${m}`)
+  t = t.replace(new RegExp(`(${ZH_HOUR})点(\\d{1,2})`, 'g'), (_, h, m) => `${parseHour(h)}:${m}`)
+  t = t.replace(new RegExp(`(${ZH_HOUR})点`, 'g'), (_, h) => `${parseHour(h)}:00`)
+  t = t.replace(new RegExp(`(${ZH_HOUR})时`, 'g'), (_, h) => `${parseHour(h)}:00`)
 
   return t
 }
@@ -95,8 +106,8 @@ const DATE_TIME_PATTERNS = [
   /下个月|本月|这个月/g,
   /\d{1,2}月\d{1,2}[日号]/g,
   /\d{1,2}号/g,
-  /(?:上午|早上|早晨|下午|晚上|傍晚|夜里|凌晨|中午)\d{1,2}(?:点|时)(?:\d{1,2}分|半)?/g,
-  /\d{1,2}点(?:\d{1,2}分|半)?/g,
+  /(?:上午|早上|早晨|下午|晚上|傍晚|夜里|凌晨|中午)(?:\d{1,2}|十[一二]?|两|[一二三四五六七八九])(?:点|时)(?:\d{1,2}分?|半)?/g,
+  /(?:\d{1,2}|十[一二]?|两|[一二三四五六七八九])点(?:\d{1,2}分?|半)?/g,
   /每天|每日|每周|每星期|每月|每个月/g,
   /紧急|重要|高优|不急|低优/g,
   /提醒我|提醒|记得|别忘了/g,
@@ -169,6 +180,9 @@ export function localParse(text, todayStr) {
       endTime = dayjs(p.end.date()).format('HH:mm')
     }
   }
+
+  // Default to today if no date was detected
+  if (!date) date = todayStr
 
   // If text has date/time keywords but chrono found nothing — still give partial confidence
   const hasDateKeyword = /今天|明天|后天|周[一二三四五六日天]|星期|号|月/.test(text)

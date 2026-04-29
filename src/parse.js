@@ -28,7 +28,7 @@ export async function parseEvent(text) {
     return {
       event: {
         title: aiResult.title || local.title || text.trim(),
-        date: aiResult.date || local.date || null,
+        date: aiResult.date || local.date || todayStr,
         time: aiResult.time || local.time || null,
         endTime: aiResult.endTime || local.endTime || null,
         repeat: aiResult.repeat || local.repeat || 'none',

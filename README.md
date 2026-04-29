@@ -1,16 +1,86 @@
-# React + Vite
+# Capy 日程
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个运行在浏览器里的自然语言日程管理应用，支持中文语音输入和多种 AI 后端。
 
-Currently, two official plugins are available:
+## 功能特性
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **自然语言输入**：直接用中文描述事项，例如"下周五下午三点开会"、"每天晚上八点健身"
+- **语音输入**：点击麦克风按钮，说出日程，自动识别并创建（需 Chrome 或 Edge）
+- **智能时间解析**：支持阿拉伯数字与中文数字混合表达，如"两点45"、"下午七点"
+- **列表 / 日历双视图**：随时切换，日历视图支持按日查看和直接新建
+- **浏览器推送提醒**：授权后在指定时间弹出系统通知（页面需保持打开）
+- **优先级 & 标签**：自动推断"会议"、"运动"、"健康"等标签，支持高优先级标记
+- **重复事项**：支持每天 / 每周 / 每月循环
+- **数据本地存储**：所有数据保存在浏览器 localStorage，无需账号，不上传服务器
 
-## React Compiler
+## 快速开始
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**环境要求**：Node.js 18+
 
-## Expanding the ESLint configuration
+```bash
+# 克隆项目
+git clone <repo-url>
+cd capy-calendar
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# 安装依赖（只需一次）
+npm install
+
+# 启动开发服务器
+npm run dev
+```
+
+浏览器访问 `http://localhost:5173` 即可使用。
+
+### 构建生产版本
+
+```bash
+npm run build
+# 产物在 dist/ 目录，可直接部署到任何静态托管服务
+```
+
+## AI 设置
+
+应用内置了一个公共 AI 网关（基于 claude-haiku），无需配置即可使用自然语言解析。
+
+如需使用自己的 API Key，点击右上角 **⚙** 图标进行配置：
+
+| 提供商 | 所需 Key |
+|--------|---------|
+| OpenAI | `sk-...` |
+| Anthropic (Claude) | `sk-ant-...` |
+| DeepSeek | `sk-...` |
+| 阿里云百炼 (Qwen) | `sk-...` |
+| 智谱 (GLM) | 智谱开放平台 Key |
+| Groq | `gsk_...` |
+| MiniMax | MiniMax 平台 Key |
+| Ollama（本地） | 填 `ollama` 即可 |
+
+API Key 仅存储在浏览器本地，不会发送到本项目服务器。
+
+## 输入示例
+
+| 输入 | 解析结果 |
+|------|---------|
+| 下午七点锻炼 | 今天 19:00，标签：运动 |
+| 明天上午十点开会 | 明天 10:00，标签：会议 |
+| 下周五下午两点45提醒我核对事项 | 下周五 14:45，标题：核对事项 |
+| 每天晚上八点健身 | 今天起每天 20:00，标签：运动 |
+| 3月15号体检 | 3月15日，标签：健康 |
+
+## 技术栈
+
+- **框架**：React 19 + Vite
+- **时间处理**：dayjs + chrono-node
+- **语音识别**：浏览器原生 Web Speech API
+- **AI 解析**：支持 OpenAI 兼容接口 & Anthropic 原生 API
+- **存储**：localStorage（纯客户端，无后端）
+
+## 注意事项
+
+- 语音识别仅支持 Chrome / Edge，Firefox 不支持
+- 浏览器推送提醒依赖页面保持打开，关闭标签页后提醒不会触发
+- 数据存储在浏览器本地，清除浏览器数据会导致日程丢失
+
+## License
+
+MIT
